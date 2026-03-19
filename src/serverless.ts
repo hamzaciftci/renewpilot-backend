@@ -4,7 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import express from 'express';
 import { IncomingMessage, ServerResponse } from 'http';
-import { AppModule } from './app.module';
+import { AppServerlessModule } from './app-serverless.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
@@ -12,7 +12,7 @@ const expressServer = express();
 let initPromise: Promise<void> | null = null;
 
 async function createApp(): Promise<void> {
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressServer), {
+  const app = await NestFactory.create(AppServerlessModule, new ExpressAdapter(expressServer), {
     logger: ['error', 'warn'],
   });
 

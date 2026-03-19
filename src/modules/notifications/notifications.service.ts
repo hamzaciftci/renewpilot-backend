@@ -1,5 +1,5 @@
 import { InjectQueue } from '@nestjs/bull';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { NotificationStatus } from '@prisma/client';
 import type { Queue } from 'bull';
 import { REMINDERS_QUEUE } from '../../common/queues/queues.module';
@@ -10,7 +10,7 @@ import { SEND_REMINDER_JOB } from './processors/reminder.processor';
 export class NotificationsService {
   constructor(
     private prisma: PrismaService,
-    @InjectQueue(REMINDERS_QUEUE) private remindersQueue: Queue,
+    @Optional() @InjectQueue(REMINDERS_QUEUE) private remindersQueue?: Queue,
   ) {}
 
   async getForUser(organizationId: string, userId: string) {
@@ -41,6 +41,10 @@ export class NotificationsService {
   }
 
   async enqueueReminder(notificationId: string, scheduledFor: Date) {
+    if (!this.remindersQueue) {
+      console.warn('[notifications] Queue not available, skipping reminder enqueue');
+      return;
+    }
     const delay = Math.max(0, scheduledFor.getTime() - Date.now());
     await this.remindersQueue.add(
       SEND_REMINDER_JOB,
