@@ -20,6 +20,8 @@ export const REMINDERS_QUEUE = 'reminders';
               port: parseInt(url.port || '6379', 10),
               password: url.password || undefined,
               tls: redisUrl.startsWith('rediss://') ? {} : undefined,
+              enableReadyCheck: false,
+              maxRetriesPerRequest: null,
             },
           };
         }
@@ -28,6 +30,9 @@ export const REMINDERS_QUEUE = 'reminders';
             host: config.get<string>('REDIS_HOST', 'localhost'),
             port: config.get<number>('REDIS_PORT', 6379),
             password: config.get<string>('REDIS_PASSWORD') || undefined,
+            enableReadyCheck: false,
+            maxRetriesPerRequest: null,
+            lazyConnect: true,
           },
         };
       },
