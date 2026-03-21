@@ -1,1 +1,1 @@
-export { default } from '../src/serverless';
+export { default } from '../dist/serverless';
