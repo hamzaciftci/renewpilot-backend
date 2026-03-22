@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
@@ -56,8 +57,18 @@ async function createApp(): Promise<void> {
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   if (!initPromise) {
-    initPromise = createApp();
+    initPromise = createApp().catch((err) => {
+      console.error('[serverless] NestJS init failed:', err);
+      initPromise = null; // allow retry on next request
+      throw err;
+    });
   }
-  await initPromise;
+  try {
+    await initPromise;
+  } catch (err) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'App initialization failed', detail: String(err) }));
+    return;
+  }
   expressServer(req as any, res as any);
 }
