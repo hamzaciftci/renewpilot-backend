@@ -1,11 +1,11 @@
 {
   "version": 2,
   "functions": {
-    "api/index.js": {
+    "api/bundle.js": {
       "maxDuration": 30
     }
   },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index" }
+    { "source": "/(.*)", "destination": "/api/bundle" }
   ]
 }

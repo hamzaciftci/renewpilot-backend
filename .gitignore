@@ -1,7 +1,11 @@
 node_modules/
 dist/
 api/dist/
+api/bundle.js
 .env
 *.env.local
 .DS_Store
 .claude/
+
+.vercel
+.env*.local
