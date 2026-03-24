@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "nest build",
-    "vercel-build": "rm -rf dist && npx prisma generate && nest build && npx esbuild api/index.js --bundle --platform=node --target=node20 --packages=external --outfile=api/index.js",
+    "vercel-build": "rm -rf dist tsconfig.build.tsbuildinfo && npx prisma generate && nest build && npx esbuild api/index.js --bundle --platform=node --target=node20 --packages=external --outfile=api/index.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
