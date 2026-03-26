@@ -35,6 +35,8 @@ async function createApp(): Promise<void> {
     origin: [
       'http://localhost:5173',
       'http://localhost:8080',
+      'https://renewpilot.vercel.app',
+      'https://renewpilot-control-center.vercel.app',
       process.env.FRONTEND_URL ?? '',
     ].filter(Boolean),
     credentials: true,
