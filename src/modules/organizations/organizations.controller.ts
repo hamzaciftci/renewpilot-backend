@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -18,6 +21,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OrgScopeGuard } from '../../common/guards/org-scope.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { InviteMemberDto } from './dto/invite-member.dto';
+import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationsService } from './organizations.service';
 
@@ -64,9 +69,45 @@ export class OrganizationsController {
   @Get('organizations/:orgId/members')
   @UseGuards(OrgScopeGuard)
   @ApiOperation({ summary: 'List organization members' })
-  getMembers(
-    @CurrentOrg() org: OrgContext,
-  ) {
+  getMembers(@CurrentOrg() org: OrgContext) {
     return this.orgsService.getMembers(org.organizationId);
+  }
+
+  @Post('organizations/:orgId/members/invite')
+  @UseGuards(OrgScopeGuard, RolesGuard)
+  @Roles(MemberRole.ADMIN)
+  @ApiOperation({ summary: 'Invite a user to the organization (admin+)' })
+  inviteMember(
+    @CurrentOrg() org: OrgContext,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: InviteMemberDto,
+  ) {
+    return this.orgsService.inviteMember(org.organizationId, user.userId, dto);
+  }
+
+  @Patch('organizations/:orgId/members/:userId/role')
+  @UseGuards(OrgScopeGuard, RolesGuard)
+  @Roles(MemberRole.ADMIN)
+  @ApiOperation({ summary: 'Update member role (admin+)' })
+  updateMemberRole(
+    @CurrentOrg() org: OrgContext,
+    @CurrentUser() user: JwtPayload,
+    @Param('userId') targetUserId: string,
+    @Body() dto: UpdateMemberRoleDto,
+  ) {
+    return this.orgsService.updateMemberRole(org.organizationId, user.userId, targetUserId, dto);
+  }
+
+  @Delete('organizations/:orgId/members/:userId')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OrgScopeGuard, RolesGuard)
+  @Roles(MemberRole.ADMIN)
+  @ApiOperation({ summary: 'Remove a member from the organization (admin+)' })
+  removeMember(
+    @CurrentOrg() org: OrgContext,
+    @CurrentUser() user: JwtPayload,
+    @Param('userId') targetUserId: string,
+  ) {
+    return this.orgsService.removeMember(org.organizationId, user.userId, targetUserId);
   }
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -8,8 +9,10 @@ import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../common/db/prisma.service';
 import { hashPassword, verifyPassword } from '../../common/utils/encryption.utils';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 export interface TokenPair {
   accessToken: string;
@@ -128,6 +131,45 @@ export class AuthService {
         createdAt: true,
       },
     });
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.fullName !== undefined && { fullName: dto.fullName }),
+        ...(dto.timezone !== undefined && { defaultTimezone: dto.timezone }),
+        ...(dto.locale !== undefined && { locale: dto.locale }),
+        ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        avatarUrl: true,
+        defaultTimezone: true,
+        locale: true,
+        status: true,
+        emailVerifiedAt: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const valid = await verifyPassword(dto.currentPassword, user.passwordHash);
+    if (!valid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+    const newHash = await hashPassword(dto.newPassword, this.config.get<number>('BCRYPT_ROUNDS', 12));
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash } });
+    // Revoke all refresh tokens for security
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    return { message: 'Password changed successfully' };
   }
 
   private async issueTokens(userId: string, email: string): Promise<TokenPair> {

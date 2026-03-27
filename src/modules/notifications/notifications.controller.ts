@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentOrg } from '../../common/decorators/current-org.decorator';
 import type { OrgContext } from '../../common/decorators/current-org.decorator';
@@ -7,6 +7,7 @@ import type { JwtPayload } from '../../common/decorators/current-user.decorator'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OrgScopeGuard } from '../../common/guards/org-scope.guard';
 import { NotificationsService } from './notifications.service';
+import type { UpdatePreferencesDto } from './notifications.service';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -35,5 +36,21 @@ export class NotificationsController {
     @Param('notificationId') notificationId: string,
   ) {
     return this.notificationsService.markAsRead(org.organizationId, user.userId, notificationId);
+  }
+
+  @Get('preferences')
+  @ApiOperation({ summary: 'Get notification preferences for current user' })
+  getPreferences(@CurrentOrg() org: OrgContext, @CurrentUser() user: JwtPayload) {
+    return this.notificationsService.getPreferences(org.organizationId, user.userId);
+  }
+
+  @Put('preferences')
+  @ApiOperation({ summary: 'Update notification preferences' })
+  updatePreferences(
+    @CurrentOrg() org: OrgContext,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdatePreferencesDto,
+  ) {
+    return this.notificationsService.updatePreferences(org.organizationId, user.userId, dto);
   }
 }
