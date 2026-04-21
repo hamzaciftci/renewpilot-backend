@@ -126,6 +126,7 @@ export class AuthService {
         avatarUrl: true,
         defaultTimezone: true,
         locale: true,
+        phoneNumber: true,
         status: true,
         emailVerifiedAt: true,
         createdAt: true,
@@ -141,6 +142,7 @@ export class AuthService {
         ...(dto.timezone !== undefined && { defaultTimezone: dto.timezone }),
         ...(dto.locale !== undefined && { locale: dto.locale }),
         ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+        ...(dto.phoneNumber !== undefined && { phoneNumber: dto.phoneNumber }),
       },
       select: {
         id: true,
@@ -149,6 +151,7 @@ export class AuthService {
         avatarUrl: true,
         defaultTimezone: true,
         locale: true,
+        phoneNumber: true,
         status: true,
         emailVerifiedAt: true,
         createdAt: true,

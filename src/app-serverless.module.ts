@@ -11,6 +11,8 @@ import { RenewalsModule } from './modules/renewals/renewals.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { NotificationsServerlessModule } from './modules/notifications/notifications-serverless.module';
+import { CronModule } from './modules/cron/cron.module';
+import { ReminderPoliciesModule } from './modules/reminder-policies/reminder-policies.module';
 
 @Module({
   imports: [
@@ -25,6 +27,15 @@ import { NotificationsServerlessModule } from './modules/notifications/notificat
         JWT_REFRESH_SECRET: Joi.string().min(32).required(),
         JWT_REFRESH_EXPIRES: Joi.string().default('7d'),
         BCRYPT_ROUNDS: Joi.number().default(12),
+        // Notification providers (optional)
+        RESEND_API_KEY: Joi.string().optional().allow(''),
+        EMAIL_FROM: Joi.string().optional().allow(''),
+        TWILIO_ACCOUNT_SID: Joi.string().optional().allow(''),
+        TWILIO_AUTH_TOKEN: Joi.string().optional().allow(''),
+        TWILIO_FROM_PHONE: Joi.string().optional().allow(''),
+        TWILIO_WHATSAPP_FROM: Joi.string().optional().allow(''),
+        CRON_SECRET: Joi.string().optional().allow(''),
+        FRONTEND_URL: Joi.string().optional().allow(''),
       }),
       validationOptions: { abortEarly: false },
     }),
@@ -35,6 +46,8 @@ import { NotificationsServerlessModule } from './modules/notifications/notificat
     AssetsModule,
     RenewalsModule,
     NotificationsServerlessModule,
+    ReminderPoliciesModule,
+    CronModule,
     BillingModule,
     AuditModule,
   ],
