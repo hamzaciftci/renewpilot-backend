@@ -13,6 +13,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { NotificationsServerlessModule } from './modules/notifications/notifications-serverless.module';
 import { CronModule } from './modules/cron/cron.module';
 import { ReminderPoliciesModule } from './modules/reminder-policies/reminder-policies.module';
+import { InvitationsModule } from './modules/invitations/invitations.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ReminderPoliciesModule } from './modules/reminder-policies/reminder-pol
     RenewalsModule,
     NotificationsServerlessModule,
     ReminderPoliciesModule,
+    InvitationsModule,
     CronModule,
     BillingModule,
     AuditModule,

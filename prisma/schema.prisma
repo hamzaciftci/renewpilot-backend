@@ -93,6 +93,13 @@ enum PlanCode {
   ENTERPRISE
 }
 
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
 // ─── Core Identity Tables ─────────────────────────────────────────────────────
 
 model User {
@@ -154,6 +161,7 @@ model Organization {
   owner            User                 @relation("OrgOwner", fields: [ownerUserId], references: [id])
   plan             Plan?                @relation(fields: [planId], references: [id])
   members          OrganizationMember[]
+  invitations      Invitation[]
   projects         Project[]
   assets           Asset[]
   reminderPolicies ReminderPolicy[]
@@ -520,6 +528,30 @@ model Payment {
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   @@map("payments")
+}
+
+// ─── Invitation Table ─────────────────────────────────────────────────────────
+
+model Invitation {
+  id               String           @id @default(uuid())
+  organizationId   String           @map("organization_id")
+  email            String
+  role             MemberRole       @default(MEMBER)
+  tokenHash        String           @unique @map("token_hash")
+  invitedByUserId  String           @map("invited_by_user_id")
+  status           InvitationStatus @default(PENDING)
+  expiresAt        DateTime         @map("expires_at")
+  acceptedAt       DateTime?        @map("accepted_at")
+  acceptedByUserId String?          @map("accepted_by_user_id")
+  revokedAt        DateTime?        @map("revoked_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@index([email, status])
+  @@map("invitations")
 }
 
 // ─── Audit Table ──────────────────────────────────────────────────────────────
