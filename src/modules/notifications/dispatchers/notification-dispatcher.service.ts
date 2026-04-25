@@ -1,9 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NotificationChannel } from '@prisma/client';
+import { WebPushService } from './web-push.service';
 
 export interface DispatchPayload {
   to: {
+    userId?: string;
     email?: string;
     phoneNumber?: string;
     fullName?: string;
@@ -12,6 +14,8 @@ export interface DispatchPayload {
   subject: string;
   body: string;
   html?: string;
+  /** Optional URL to open when a push notification is clicked. */
+  pushUrl?: string;
 }
 
 export interface DispatchResult {
@@ -30,7 +34,10 @@ export class NotificationDispatcherService {
   private readonly logger = new Logger(NotificationDispatcherService.name);
   private twilioClient: any = null;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly webPush: WebPushService,
+  ) {
     this.initTwilio();
   }
 
@@ -172,9 +179,46 @@ export class NotificationDispatcherService {
     }
   }
 
-  // ─── Push via FCM (stubbed) ───────────────────────────────────────────────
+  // ─── Web Push (VAPID) ──────────────────────────────────────────────────────
   private async dispatchPush(payload: DispatchPayload): Promise<DispatchResult> {
-    this.logger.warn(`[PUSH STUB] ${payload.subject}`);
-    return { success: true, providerName: 'stub', providerMessageId: `push-stub-${Date.now()}` };
+    if (!payload.to.userId) {
+      return { success: false, error: 'userId missing for push channel' };
+    }
+
+    if (!this.webPush.isConfigured()) {
+      this.logger.warn(`[PUSH STUB] ${payload.subject} (VAPID not configured)`);
+      return { success: true, providerName: 'stub', providerMessageId: `push-stub-${Date.now()}` };
+    }
+
+    const result = await this.webPush.sendToUser(payload.to.userId, {
+      title: payload.subject,
+      body: payload.body,
+      url: payload.pushUrl,
+      tag: 'renewpilot',
+    });
+
+    if (result.attempted === 0) {
+      // No subscriptions = user hasn't enabled browser push. Don't error —
+      // this is normal and shouldn't mark the notification as failed.
+      return {
+        success: true,
+        providerName: 'web-push',
+        providerMessageId: 'no-subscriptions',
+      };
+    }
+
+    if (result.succeeded === 0) {
+      return {
+        success: false,
+        providerName: 'web-push',
+        error: `0/${result.attempted} subscriptions accepted (expired=${result.failedExpired}, other=${result.failedOther})`,
+      };
+    }
+
+    return {
+      success: true,
+      providerName: 'web-push',
+      providerMessageId: `web-push-${result.succeeded}/${result.attempted}`,
+    };
   }
 }

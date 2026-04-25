@@ -13,6 +13,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { BillingModule } from './modules/billing/billing.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { LookupsModule } from './modules/lookups/lookups.module';
+import { PushModule } from './modules/push/push.module';
 
 @Module({
   imports: [
@@ -32,6 +33,9 @@ import { LookupsModule } from './modules/lookups/lookups.module';
         JWT_REFRESH_SECRET: Joi.string().min(32).required(),
         JWT_REFRESH_EXPIRES: Joi.string().default('7d'),
         BCRYPT_ROUNDS: Joi.number().default(12),
+        VAPID_PUBLIC_KEY: Joi.string().optional().allow(''),
+        VAPID_PRIVATE_KEY: Joi.string().optional().allow(''),
+        VAPID_SUBJECT: Joi.string().optional().allow(''),
       }),
       validationOptions: { abortEarly: false },
     }),
@@ -46,6 +50,7 @@ import { LookupsModule } from './modules/lookups/lookups.module';
     BillingModule,
     AuditModule,
     LookupsModule,
+    PushModule,
   ],
 })
 export class AppModule implements NestModule {

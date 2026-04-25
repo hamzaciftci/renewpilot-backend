@@ -188,6 +188,7 @@ export class CronService {
           // Dispatch
           const dispatchResult = await this.dispatcher.dispatch({
             to: {
+              userId: recipient.id,
               email: recipient.email,
               phoneNumber: recipient.phoneNumber ?? undefined,
               fullName: recipient.fullName,
@@ -196,6 +197,7 @@ export class CronService {
             subject,
             body,
             html,
+            pushUrl: `/assets/${asset.id}`,
           });
 
           if (dispatchResult.success) {

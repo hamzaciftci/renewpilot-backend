@@ -124,6 +124,7 @@ model User {
   assignedAssets        Asset[]              @relation("AssetAssignedUser")
   refreshTokens         RefreshToken[]
   notifications         Notification[]
+  pushSubscriptions     WebPushSubscription[]
   createdAuditLogs      AuditLog[]
 
   @@map("users")
@@ -445,6 +446,22 @@ model Notification {
   @@index([organizationId, status, scheduledFor])
   @@index([userId, status])
   @@map("notifications")
+}
+
+model WebPushSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("web_push_subscriptions")
 }
 
 model NotificationPreference {

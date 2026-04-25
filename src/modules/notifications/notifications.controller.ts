@@ -78,6 +78,7 @@ export class NotificationsController {
     const channel = body.channel;
     const result = await this.dispatcher.dispatch({
       to: {
+        userId: user.userId,
         email: userRecord.email,
         phoneNumber: userRecord.phoneNumber ?? undefined,
         fullName: userRecord.fullName,
@@ -86,6 +87,7 @@ export class NotificationsController {
       subject: 'RenewPilot Test Bildirimi ✓',
       body: `Merhaba ${userRecord.fullName},\n\n${channel} kanalı başarıyla yapılandırılmış. Yenileme hatırlatıcılarınız bu kanal üzerinden gelecek.\n\n— RenewPilot`,
       html: `<div style="font-family:sans-serif;padding:20px;"><h2>✓ Test Başarılı</h2><p>Merhaba <strong>${userRecord.fullName}</strong>,</p><p><strong>${channel}</strong> kanalı başarıyla yapılandırılmış.</p><p>Yenileme hatırlatıcılarınız bu kanal üzerinden gelecek.</p><p>— RenewPilot</p></div>`,
+      pushUrl: '/notifications',
     });
 
     return result;

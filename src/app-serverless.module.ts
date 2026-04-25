@@ -15,6 +15,7 @@ import { CronModule } from './modules/cron/cron.module';
 import { ReminderPoliciesModule } from './modules/reminder-policies/reminder-policies.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { LookupsModule } from './modules/lookups/lookups.module';
+import { PushModule } from './modules/push/push.module';
 
 @Module({
   imports: [
@@ -38,6 +39,10 @@ import { LookupsModule } from './modules/lookups/lookups.module';
         TWILIO_WHATSAPP_FROM: Joi.string().optional().allow(''),
         CRON_SECRET: Joi.string().optional().allow(''),
         FRONTEND_URL: Joi.string().optional().allow(''),
+        // Web Push (VAPID) — optional. If missing, push send is a no-op.
+        VAPID_PUBLIC_KEY: Joi.string().optional().allow(''),
+        VAPID_PRIVATE_KEY: Joi.string().optional().allow(''),
+        VAPID_SUBJECT: Joi.string().optional().allow(''),
       }),
       validationOptions: { abortEarly: false },
     }),
@@ -54,6 +59,7 @@ import { LookupsModule } from './modules/lookups/lookups.module';
     BillingModule,
     AuditModule,
     LookupsModule,
+    PushModule,
   ],
 })
 export class AppServerlessModule implements NestModule {
