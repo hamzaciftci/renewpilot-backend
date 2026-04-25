@@ -7,7 +7,8 @@ import {
   renderRenewalReminderSms,
   RenewalReminderData,
 } from '../notifications/templates/renewal-reminder.template';
-import { MemberRole, NotificationChannel, NotificationStatus } from '@prisma/client';
+import { addInterval, daysUntilExpiry, getExpiryStatus } from '../../common/utils/date.utils';
+import { MemberRole, NotificationChannel, NotificationStatus, RenewalEventType } from '@prisma/client';
 
 /**
  * Default reminder offsets (days):
@@ -45,6 +46,10 @@ export class CronService {
     const result = { processed: 0, sent: 0, skipped: 0, failed: 0, details: [] as string[] };
     const now = new Date();
     const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+    // Credit cards recur monthly: any whose renewalDate is in the past gets rolled forward
+    // so the upcoming month's due date lines up with the reminder offsets.
+    await this.rollForwardOverdueCreditCards(today);
 
     // Fetch all non-deleted, non-archived, non-cancelled assets across all orgs
     const assets = await this.prisma.asset.findMany({
@@ -122,6 +127,7 @@ export class CronService {
             ? `${asset.priceCurrency} ${asset.priceAmount.toString()}`
             : null,
           dashboardUrl,
+          metadata: asset.metadata as Record<string, unknown> | null,
         };
 
         const enabledChannels: NotificationChannel[] = [];
@@ -274,5 +280,60 @@ export class CronService {
     if (daysUntil < 0) return `EXPIRED_${Math.abs(daysUntil)}D`;
     if (daysUntil === 0) return 'EXPIRED_0D';
     return `REMINDER_${daysUntil}D`;
+  }
+
+  /**
+   * Credit cards are monthly recurring — when the due day passes, roll the asset's
+   * renewalDate forward by its interval (usually +1 month) until it's in the future.
+   * This re-arms the reminder pipeline for next month automatically.
+   */
+  private async rollForwardOverdueCreditCards(today: Date): Promise<void> {
+    const overdueCards = await this.prisma.asset.findMany({
+      where: {
+        deletedAt: null,
+        assetType: 'CREDIT_CARD',
+        status: { in: ['ACTIVE', 'EXPIRING_SOON', 'EXPIRED'] },
+        renewalDate: { lt: today },
+        organization: { deletedAt: null, status: 'ACTIVE' },
+      },
+      select: {
+        id: true,
+        renewalDate: true,
+        renewalIntervalUnit: true,
+        renewalIntervalValue: true,
+      },
+    });
+
+    for (const card of overdueCards) {
+      let nextDate = card.renewalDate;
+      const unit = card.renewalIntervalUnit ?? 'month';
+      const value = card.renewalIntervalValue ?? 1;
+      // Advance until the date is in the future — handles multiple missed cycles.
+      let safety = 0;
+      while (nextDate < today && safety++ < 24) {
+        nextDate = addInterval(nextDate, unit, value);
+      }
+      const status = getExpiryStatus(daysUntilExpiry(nextDate));
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.asset.update({
+          where: { id: card.id },
+          data: { renewalDate: nextDate, status, lastRenewedAt: new Date() },
+        });
+        await tx.renewalEvent.create({
+          data: {
+            assetId: card.id,
+            eventType: RenewalEventType.RENEWED,
+            oldRenewalDate: card.renewalDate,
+            newRenewalDate: nextDate,
+            notes: 'Monthly auto-advance (credit card due date passed)',
+          },
+        });
+      });
+
+      this.logger.log(
+        `Credit card ${card.id} advanced: ${card.renewalDate.toISOString().slice(0, 10)} → ${nextDate.toISOString().slice(0, 10)}`,
+      );
+    }
   }
 }

@@ -7,6 +7,7 @@ export interface RenewalReminderData {
   daysUntil: number; // negative = overdue
   price?: string | null;
   dashboardUrl: string;
+  metadata?: Record<string, unknown> | null;
 }
 
 const ASSET_TYPE_LABEL: Record<string, string> = {
@@ -16,8 +17,22 @@ const ASSET_TYPE_LABEL: Record<string, string> = {
   LICENSE: 'Lisans',
   HOSTING_SERVICE: 'Hosting',
   CDN_SERVICE: 'CDN',
+  CREDIT_CARD: 'Kredi Kartı',
   CUSTOM: 'Özel',
 };
+
+function isCreditCard(type: string): boolean {
+  return type === 'CREDIT_CARD';
+}
+
+function formatCreditCardTitle(data: RenewalReminderData): string {
+  const last4 = (data.metadata?.last4 as string | undefined) ?? '';
+  const bank = (data.metadata?.bankName as string | undefined) ?? data.vendorName ?? '';
+  const parts: string[] = [data.assetName];
+  if (bank) parts.push(bank);
+  if (last4) parts.push(`**** ${last4}`);
+  return parts.join(' · ');
+}
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -37,23 +52,28 @@ export function renderRenewalReminderEmail(data: RenewalReminderData): { subject
   const urgency = getUrgencyInfo(data.daysUntil);
   const typeLabel = ASSET_TYPE_LABEL[data.assetType] ?? data.assetType;
   const dateStr = formatDate(data.renewalDate);
+  const cc = isCreditCard(data.assetType);
+  const actionWordInf = cc ? 'ödeme' : 'yenileme';
+  const actionVerbPhrase = cc ? 'ödemeniz' : 'yenilemeniz';
+  const displayTitle = cc ? formatCreditCardTitle(data) : data.assetName;
+  const statementDay = cc ? (data.metadata?.statementDay as number | undefined) : undefined;
 
   const subject = data.daysUntil < 0
-    ? `🚨 ${data.assetName} yenileme tarihi geçti (${Math.abs(data.daysUntil)} gün önce)`
+    ? `🚨 ${displayTitle} ${actionWordInf} tarihi geçti (${Math.abs(data.daysUntil)} gün önce)`
     : data.daysUntil === 0
-    ? `🚨 ${data.assetName} BUGÜN sona eriyor`
-    : `${urgency.emoji} ${data.assetName} — ${data.daysUntil} gün içinde yenilenmeli`;
+    ? `🚨 ${displayTitle} — son ${actionWordInf} tarihi BUGÜN`
+    : `${urgency.emoji} ${displayTitle} — ${data.daysUntil} gün içinde ${actionVerbPhrase} gerekiyor`;
 
   const text = `Merhaba ${data.recipientName},
 
 ${urgency.label}
 
-Varlık: ${data.assetName}
+${cc ? 'Kart' : 'Varlık'}: ${displayTitle}
 Tür: ${typeLabel}
-${data.vendorName ? `Sağlayıcı: ${data.vendorName}\n` : ''}Yenileme Tarihi: ${dateStr}
-${data.price ? `Ücret: ${data.price}\n` : ''}
+${data.vendorName ? `${cc ? 'Banka' : 'Sağlayıcı'}: ${data.vendorName}\n` : ''}${cc ? 'Son Ödeme Tarihi' : 'Yenileme Tarihi'}: ${dateStr}
+${statementDay ? `Hesap Kesim Günü: Her ayın ${statementDay}'ı\n` : ''}${data.price ? `Tutar: ${data.price}\n` : ''}
 
-Dashboard'dan yenilemek için: ${data.dashboardUrl}
+Panel: ${data.dashboardUrl}
 
 — RenewPilot`;
 
@@ -73,14 +93,15 @@ Dashboard'dan yenilemek için: ${data.dashboardUrl}
     <div style="padding:28px;">
       <p style="margin:0 0 16px;color:#111827;font-size:16px;">Merhaba <strong>${data.recipientName}</strong>,</p>
       <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.55;">
-        <strong>${data.assetName}</strong> adlı ${typeLabel.toLowerCase()} için ${data.daysUntil < 0 ? 'yenileme tarihi geçti' : data.daysUntil === 0 ? 'yenileme tarihi bugün' : `${data.daysUntil} gün içinde yenileme gerekli`}.
+        <strong>${displayTitle}</strong> adlı ${typeLabel.toLowerCase()} için ${data.daysUntil < 0 ? `${actionWordInf} tarihi geçti` : data.daysUntil === 0 ? `${actionWordInf} günü bugün` : `${data.daysUntil} gün içinde ${actionWordInf} yapmanız gerekiyor`}.
       </p>
       <table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f9fafb;border-radius:10px;overflow:hidden;">
-        <tr><td style="padding:12px 16px;color:#6b7280;font-size:13px;width:40%;">Varlık</td><td style="padding:12px 16px;color:#111827;font-size:14px;font-weight:600;">${data.assetName}</td></tr>
+        <tr><td style="padding:12px 16px;color:#6b7280;font-size:13px;width:40%;">${cc ? 'Kart' : 'Varlık'}</td><td style="padding:12px 16px;color:#111827;font-size:14px;font-weight:600;">${displayTitle}</td></tr>
         <tr style="border-top:1px solid #e5e7eb;"><td style="padding:12px 16px;color:#6b7280;font-size:13px;">Tür</td><td style="padding:12px 16px;color:#111827;font-size:14px;">${typeLabel}</td></tr>
-        ${data.vendorName ? `<tr style="border-top:1px solid #e5e7eb;"><td style="padding:12px 16px;color:#6b7280;font-size:13px;">Sağlayıcı</td><td style="padding:12px 16px;color:#111827;font-size:14px;">${data.vendorName}</td></tr>` : ''}
-        <tr style="border-top:1px solid #e5e7eb;"><td style="padding:12px 16px;color:#6b7280;font-size:13px;">Yenileme Tarihi</td><td style="padding:12px 16px;color:${urgency.color};font-size:14px;font-weight:700;">${dateStr}</td></tr>
-        ${data.price ? `<tr style="border-top:1px solid #e5e7eb;"><td style="padding:12px 16px;color:#6b7280;font-size:13px;">Ücret</td><td style="padding:12px 16px;color:#111827;font-size:14px;">${data.price}</td></tr>` : ''}
+        ${data.vendorName ? `<tr style="border-top:1px solid #e5e7eb;"><td style="padding:12px 16px;color:#6b7280;font-size:13px;">${cc ? 'Banka' : 'Sağlayıcı'}</td><td style="padding:12px 16px;color:#111827;font-size:14px;">${data.vendorName}</td></tr>` : ''}
+        <tr style="border-top:1px solid #e5e7eb;"><td style="padding:12px 16px;color:#6b7280;font-size:13px;">${cc ? 'Son Ödeme Tarihi' : 'Yenileme Tarihi'}</td><td style="padding:12px 16px;color:${urgency.color};font-size:14px;font-weight:700;">${dateStr}</td></tr>
+        ${statementDay ? `<tr style="border-top:1px solid #e5e7eb;"><td style="padding:12px 16px;color:#6b7280;font-size:13px;">Hesap Kesim Günü</td><td style="padding:12px 16px;color:#111827;font-size:14px;">Her ayın ${statementDay}'ı</td></tr>` : ''}
+        ${data.price ? `<tr style="border-top:1px solid #e5e7eb;"><td style="padding:12px 16px;color:#6b7280;font-size:13px;">${cc ? 'Tutar' : 'Ücret'}</td><td style="padding:12px 16px;color:#111827;font-size:14px;">${data.price}</td></tr>` : ''}
       </table>
       <div style="text-align:center;margin:28px 0 8px;">
         <a href="${data.dashboardUrl}" style="display:inline-block;padding:13px 32px;background:#6366f1;color:#fff;text-decoration:none;border-radius:9px;font-weight:600;font-size:15px;">Panele Git</a>
@@ -99,11 +120,13 @@ Dashboard'dan yenilemek için: ${data.dashboardUrl}
 export function renderRenewalReminderSms(data: RenewalReminderData): string {
   const urgency = getUrgencyInfo(data.daysUntil);
   const typeLabel = ASSET_TYPE_LABEL[data.assetType] ?? data.assetType;
+  const cc = isCreditCard(data.assetType);
+  const title = cc ? formatCreditCardTitle(data) : data.assetName;
   if (data.daysUntil < 0) {
-    return `[RenewPilot] ${urgency.emoji} ${data.assetName} (${typeLabel}) yenilemesi ${Math.abs(data.daysUntil)} gün önce geçti. Panel: ${data.dashboardUrl}`;
+    return `[RenewPilot] ${urgency.emoji} ${title} (${typeLabel}) ${cc ? 'son ödeme' : 'yenileme'} ${Math.abs(data.daysUntil)} gün önce geçti. Panel: ${data.dashboardUrl}`;
   }
   if (data.daysUntil === 0) {
-    return `[RenewPilot] ${urgency.emoji} ${data.assetName} (${typeLabel}) BUGÜN sona eriyor! Hemen yenileyin: ${data.dashboardUrl}`;
+    return `[RenewPilot] ${urgency.emoji} ${title} (${typeLabel}) ${cc ? 'son ödeme tarihi BUGÜN' : 'BUGÜN sona eriyor'}! Panel: ${data.dashboardUrl}`;
   }
-  return `[RenewPilot] ${urgency.emoji} ${data.assetName} (${typeLabel}) ${data.daysUntil} gün içinde yenilenmeli. Panel: ${data.dashboardUrl}`;
+  return `[RenewPilot] ${urgency.emoji} ${title} (${typeLabel}) ${data.daysUntil} gün içinde ${cc ? 'ödenmeli' : 'yenilenmeli'}. Panel: ${data.dashboardUrl}`;
 }

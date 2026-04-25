@@ -12,6 +12,7 @@ import { RenewalsModule } from './modules/renewals/renewals.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { LookupsModule } from './modules/lookups/lookups.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { AuditModule } from './modules/audit/audit.module';
     NotificationsModule,
     BillingModule,
     AuditModule,
+    LookupsModule,
   ],
 })
 export class AppModule implements NestModule {

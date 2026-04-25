@@ -14,6 +14,11 @@ export class AssetsService {
     const renewalDate = new Date(dto.renewalDate);
     const status = getExpiryStatus(daysUntilExpiry(renewalDate));
 
+    // Credit cards are monthly-recurring by nature.
+    const isCreditCard = dto.assetType === 'CREDIT_CARD';
+    const renewalIntervalUnit = isCreditCard ? 'month' : undefined;
+    const renewalIntervalValue = isCreditCard ? 1 : undefined;
+
     const asset = await this.prisma.asset.create({
       data: {
         organizationId,
@@ -28,6 +33,8 @@ export class AssetsService {
         assignedUserId: dto.assignedUserId,
         notes: dto.notes,
         metadata: dto.metadata as any,
+        ...(renewalIntervalUnit && { renewalIntervalUnit }),
+        ...(renewalIntervalValue && { renewalIntervalValue }),
         createdByUserId: userId,
       },
     });

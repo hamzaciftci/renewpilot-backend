@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUrl, Matches, MinLength } from 'class-validator';
+import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateProfileDto {
   @ApiPropertyOptional()
@@ -18,9 +18,13 @@ export class UpdateProfileDto {
   @IsString()
   locale?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'http(s):// URL veya data:image/...;base64 verisi. Max ~500KB.' })
   @IsOptional()
-  @IsUrl()
+  @IsString()
+  @MaxLength(700_000)
+  @Matches(/^(https?:\/\/|data:image\/(png|jpeg|jpg|webp|gif);base64,)/, {
+    message: 'avatarUrl must be an http(s) URL or a data:image/... base64 string',
+  })
   avatarUrl?: string;
 
   @ApiPropertyOptional({ example: '+905551234567', description: 'E.164 formatında telefon numarası (SMS/WhatsApp için)' })

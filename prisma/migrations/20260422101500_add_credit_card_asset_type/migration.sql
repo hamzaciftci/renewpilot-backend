@@ -1,0 +1,2 @@
+-- Add CREDIT_CARD to AssetType enum
+ALTER TYPE "AssetType" ADD VALUE IF NOT EXISTS 'CREDIT_CARD';

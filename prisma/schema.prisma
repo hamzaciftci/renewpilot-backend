@@ -39,6 +39,7 @@ enum AssetType {
   LICENSE
   HOSTING_SERVICE
   CDN_SERVICE
+  CREDIT_CARD
   CUSTOM
 }
 

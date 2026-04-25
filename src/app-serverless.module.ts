@@ -14,6 +14,7 @@ import { NotificationsServerlessModule } from './modules/notifications/notificat
 import { CronModule } from './modules/cron/cron.module';
 import { ReminderPoliciesModule } from './modules/reminder-policies/reminder-policies.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
+import { LookupsModule } from './modules/lookups/lookups.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
     CronModule,
     BillingModule,
     AuditModule,
+    LookupsModule,
   ],
 })
 export class AppServerlessModule implements NestModule {
