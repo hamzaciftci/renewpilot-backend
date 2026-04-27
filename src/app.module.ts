@@ -14,6 +14,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { LookupsModule } from './modules/lookups/lookups.module';
 import { PushModule } from './modules/push/push.module';
+import { AssetShareLinksModule } from './modules/asset-share-links/asset-share-links.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { PushModule } from './modules/push/push.module';
     AuditModule,
     LookupsModule,
     PushModule,
+    AssetShareLinksModule,
   ],
 })
 export class AppModule implements NestModule {

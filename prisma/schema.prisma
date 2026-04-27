@@ -126,6 +126,7 @@ model User {
   notifications         Notification[]
   pushSubscriptions     WebPushSubscription[]
   createdAuditLogs      AuditLog[]
+  createdShareLinks     AssetShareLink[]     @relation("ShareLinkCreator")
 
   @@map("users")
 }
@@ -251,6 +252,7 @@ model Asset {
   license        License?
   hostingService HostingService?
   cdnService     CdnService?
+  shareLinks     AssetShareLink[]
 
   @@index([organizationId])
   @@index([organizationId, renewalDate])
@@ -570,6 +572,31 @@ model Invitation {
   @@index([organizationId, status])
   @@index([email, status])
   @@map("invitations")
+}
+
+// ─── Asset Share Link Table ───────────────────────────────────────────────────
+
+/// Read-only public links to an asset. The plaintext token is shown to the
+/// creator once on creation; only the SHA-256 hash is stored. Looking up a
+/// link from a public URL hashes the URL token and matches against tokenHash.
+model AssetShareLink {
+  id              String    @id @default(uuid())
+  assetId         String    @map("asset_id")
+  tokenHash       String    @unique @map("token_hash")
+  label           String?
+  createdByUserId String    @map("created_by_user_id")
+  expiresAt       DateTime? @map("expires_at")
+  revokedAt       DateTime? @map("revoked_at")
+  viewCount       Int       @default(0) @map("view_count")
+  lastViewedAt    DateTime? @map("last_viewed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  asset     Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("ShareLinkCreator", fields: [createdByUserId], references: [id])
+
+  @@index([assetId])
+  @@map("asset_share_links")
 }
 
 // ─── Audit Table ──────────────────────────────────────────────────────────────

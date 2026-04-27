@@ -16,6 +16,7 @@ import { ReminderPoliciesModule } from './modules/reminder-policies/reminder-pol
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { LookupsModule } from './modules/lookups/lookups.module';
 import { PushModule } from './modules/push/push.module';
+import { AssetShareLinksModule } from './modules/asset-share-links/asset-share-links.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { PushModule } from './modules/push/push.module';
     AuditModule,
     LookupsModule,
     PushModule,
+    AssetShareLinksModule,
   ],
 })
 export class AppServerlessModule implements NestModule {
